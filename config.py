@@ -6,5 +6,5 @@ class Config:
     DB_HOST = '127.0.0.1'
     DB_PORT = 3306
     DB_USER = 'root'
-    DB_PASSWORD = 'shisannian1223'  # <--- 请修改这里
+    DB_PASSWORD = '123456'  # <--- 请修改这里
     DB_NAME = 'mall_b2c'
