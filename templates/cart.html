@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4 border-bottom pb-2">🛒 我的购物车</h2>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 40%">商品信息</th>
+                            <th style="width: 20%">规格</th>
+                            <th style="width: 15%">单价</th>
+                            <th style="width: 10%">数量</th>
+                            <th style="width: 15%">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ item.product_pic or '' }}" alt="" style="width: 60px; height: 60px; object-fit: cover;" class="rounded me-3 border" onerror="this.src='https://dummyimage.com/60x60/dee2e6/6c757d.jpg&text=No+Img'">
+                                    <div>
+                                        <h6 class="mb-0 text-truncate" style="max-width: 250px;" title="{{ item.product_name }}">{{ item.product_name }}</h6>
+                                        <small class="text-muted">ID: {{ item.product_sku_id }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-light text-dark border">{{ item.product_attr }}</span></td>
+                            <td class="fw-bold text-danger">¥ {{ item.price }}</td>
+                            <td>x {{ item.quantity }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('{{ item.id }}')"><i class="bi bi-trash"></i> 删除</button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <div class="mb-3"><i class="bi bi-cart-x display-1"></i></div>
+                                <h4>购物车空空如也</h4>
+                                <p>快去<a href="/pms/index">首页</a>逛逛吧！</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                    {% if items %}
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="5" class="bg-warning bg-opacity-10 text-dark">
+                                <i class="bi bi-gem"></i> 尊贵的 <strong>{{ level_name }}</strong>，
+                                您享受 <strong>{{ (discount * 10) | round(1) }}折</strong> 优惠
+                                {% if discount < 1 %}
+                                <span class="badge bg-danger ms-2">已省 ¥ {{ (raw_total - total) | round(2) }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-end pt-3">使用优惠券：</td>
+                            <td colspan="2">
+                                <select class="form-select" id="coupon-select" onchange="updateTotal()">
+                                    <option value="0" data-amount="0">不使用优惠券</option>
+                                    {% for c in coupons %}
+                                    <option value="{{ c.history_id }}" data-amount="{{ c.amount }}">
+                                        {{ c.name }} (省 ¥{{ c.amount }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-end fw-bold fs-5 pt-3">应付总额：</td>
+                            <td colspan="2" class="text-danger fw-bold fs-4">
+                                ¥ <span id="final-price">{{ total | round(2) }}</span>
+                                <br>
+                                <small class="text-muted fs-6 text-decoration-line-through">
+                                    原价: ¥ {{ raw_total | round(2) }}
+                                </small>
+                            </td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+
+        {% if items %}
+        <div class="alert alert-info mt-4 d-flex justify-content-between align-items-center shadow-sm">
+            <div>
+                <i class="bi bi-geo-alt-fill text-danger fs-5 me-2"></i>
+                <strong>配送地址确认：</strong>
+                <span class="text-muted">系统默认配送至您的默认地址</span>
+            </div>
+            <a href="/ums/address" class="btn btn-sm btn-outline-primary bg-white"><i class="bi bi-pencil-square"></i> 管理/修改地址</a>
+        </div>
+
+        <div class="d-flex justify-content-end mt-3">
+            <button onclick="submitOrder()" class="btn btn-primary btn-lg px-5 shadow">立即结算下单 <i class="bi bi-arrow-right"></i></button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // 这里的 baseTotal 是后端算好的“会员折后价”
+    var baseTotal = {{ total | default(0) }};
+
+    function deleteItem(cartId) {
+        if(confirm('确定删除吗？')) {
+            $.post('/oms/delete_cart_item', {cart_id: cartId}, function(res){
+                if(res.code === 200) location.reload();
+                else alert(res.msg);
+            });
+        }
+    }
+
+    function updateTotal() {
+        var select = document.getElementById('coupon-select');
+        var option = select.options[select.selectedIndex];
+        var couponDiscount = parseFloat(option.getAttribute('data-amount')) || 0;
+
+        // 在会员价基础上减去优惠券
+        var finalPrice = baseTotal - couponDiscount;
+        if(finalPrice < 0) finalPrice = 0;
+
+        document.getElementById('final-price').innerText = finalPrice.toFixed(2);
+    }
+
+    function submitOrder() {
+        var select = document.getElementById('coupon-select');
+        var couponId = select.value;
+
+        if(confirm('确认下单吗？')) {
+            var btn = event.target;
+            if(btn.tagName === 'I') btn = btn.parentElement;
+            var originalText = btn.innerHTML;
+
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 处理中...';
+            btn.disabled = true;
+
+            $.post('/oms/submit_order', {
+                member_coupon_id: couponId === '0' ? '' : couponId
+            }, function(res){
+                if(res.code === 200) {
+                    alert('🎉 下单成功！\n订单号：' + res.order_sn);
+                    window.location.href = '/oms/my_orders';
+                } else {
+                    alert('❌ 下单失败：' + res.msg);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            }).fail(function() {
+                alert('网络错误');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+    }
+</script>
+{% endblock %}

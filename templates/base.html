@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B2C 综合商城系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.2.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+</head>
+<body class="bg-light d-flex flex-column min-vh-100">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="/"><i class="bi bi-shop"></i> 综合商城</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+            <a class="nav-link" href="/pms/index"><i class="bi bi-house"></i> 首页</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/sms/coupon_center"><i class="bi bi-ticket-perforated"></i> 领券中心</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/oms/cart"><i class="bi bi-cart"></i> 购物车</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/oms/my_orders"><i class="bi bi-receipt"></i> 我的订单</a>
+        </li>
+
+        {% if session.get('admin_id') %}
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle active fw-bold" href="#" role="button" data-bs-toggle="dropdown">
+                <i class="bi bi-gear-fill"></i> 管理后台
+            </a>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="/wms/">📦 WMS 库存管理</a></li>
+                <li><a class="dropdown-item" href="/admin/">🔧 SYS 后台管理</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="/admin/logout">退出管理员</a></li>
+            </ul>
+        </li>
+        {% endif %}
+      </ul>
+
+      <span class="navbar-text text-white">
+        {% if session.get('username') %}
+           <i class="bi bi-person-circle"></i> {{ session.username }}
+           <span class="mx-2">|</span>
+
+           <a href="/ums/address" class="text-white text-decoration-none" title="收货地址管理">
+               <i class="bi bi-geo-alt"></i>
+           </a>
+
+           <span class="mx-2">|</span>
+
+           <a href="/sms/my_coupons" class="text-white text-decoration-none" title="我的优惠券">
+               <i class="bi bi-ticket"></i>
+           </a>
+
+           <span class="mx-2">|</span>
+           <a href="/ums/logout" class="text-white text-decoration-none">退出</a>
+        {% else %}
+           <a href="/ums/login" class="text-white text-decoration-none">登录</a>
+           <span class="mx-2">|</span>
+           <a href="/ums/register" class="text-white text-decoration-none">注册</a>
+        {% endif %}
+      </span>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-4 mb-5">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</div>
+
+<footer class="mt-auto py-3 bg-white border-top text-center text-muted">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <small>&copy; 2025 数据库系统综合实验 · 第四小组</small>
+            </div>
+            <div class="col-12 mt-2">
+                <small>
+                    <a href="/admin/login" class="text-decoration-none text-muted" style="font-size: 12px;">
+                        <i class="bi bi-shield-lock"></i> 管理员入口
+                    </a>
+                </small>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.2.3/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

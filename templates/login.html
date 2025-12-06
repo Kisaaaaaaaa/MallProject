@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white text-center py-3">
+                <h4 class="mb-0 text-primary fw-bold">用户登录</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    <div class="mb-3">
+                        <label class="form-label">用户名</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input type="text" name="username" class="form-control" placeholder="请输入用户名" required>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">密码</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            <input type="password" name="password" class="form-control" placeholder="请输入密码" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2">立即登录</button>
+                </form>
+            </div>
+            <div class="card-footer bg-light text-center py-3">
+                <small class="text-muted">还没有账号？ <a href="/ums/register">去注册</a></small>
+            </div>
+        </div>
+
+        <div class="text-center mt-3 text-muted small">
+            <p>测试账号: test_user / 123456</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

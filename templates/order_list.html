@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4 border-bottom pb-2">🧾 我的订单列表</h2>
+
+        {% for order in orders %}
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="fw-bold me-3">订单号: {{ order.order_sn }}</span>
+                    <small class="text-muted">{{ order.create_time }}</small>
+                </div>
+                <div>
+                    {% if order.status == 0 %}
+                        <span class="badge bg-warning text-dark">待付款</span>
+                    {% elif order.status == 1 %}
+                        <span class="badge bg-info">待发货</span>
+                    {% elif order.status == 2 %}
+                        <span class="badge bg-primary">已发货</span>
+                    {% elif order.status == 3 %}
+                        <span class="badge bg-success">已完成</span>
+                    {% elif order.status == 4 %}
+                        <span class="badge bg-secondary">已关闭</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="mb-1"><strong>收货人:</strong> {{ order.receiver_name }} ({{ order.receiver_phone }})</p>
+                        <p class="mb-1 text-muted"><strong>收货地址:</strong> {{ order.receiver_detail_address }}</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <p class="mb-0 text-muted">订单总额</p>
+                        <h3 class="text-danger">¥ {{ order.total_amount }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-white text-end">
+                {% if order.status == 0 %}
+                    <button onclick="cancelOrder('{{ order.id }}')" class="btn btn-sm btn-outline-secondary">取消订单</button>
+                    <button onclick="payOrder('{{ order.id }}')" class="btn btn-sm btn-danger">去支付</button>
+                {% elif order.status == 1 %}
+                    <button class="btn btn-sm btn-light" disabled>商家正在打包...</button>
+                {% elif order.status == 2 %}
+                    <button onclick="confirmReceipt('{{ order.id }}')" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-check-circle"></i> 确认收货
+                    </button>
+                {% elif order.status == 3 %}
+                    <a href="/pms/index" class="btn btn-sm btn-outline-success">再来一单</a>
+                {% else %}
+                    <button class="btn btn-sm btn-light" disabled>已关闭</button>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center py-5">
+            <h4>暂无历史订单</h4>
+            <p>您还没有买过东西，快去下单吧！</p>
+            <a href="/pms/index" class="btn btn-primary">去购物</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    // 支付逻辑
+    function payOrder(orderId) {
+        if(confirm("模拟支付：确认支付该订单吗？")) {
+            $.post('/oms/pay_order', {order_id: orderId}, function(res){
+                if(res.code === 200) {
+                    alert("✅ 支付成功！");
+                    location.reload();
+                } else {
+                    alert("支付失败: " + res.msg);
+                }
+            });
+        }
+    }
+
+    // 取消逻辑
+    function cancelOrder(orderId) {
+        if(confirm("确定要取消这个订单吗？")) {
+            $.post('/oms/cancel_order', {order_id: orderId}, function(res){
+                if(res.code === 200) {
+                    alert("订单已取消");
+                    location.reload();
+                } else {
+                    alert("取消失败: " + res.msg);
+                }
+            });
+        }
+    }
+
+    // [新增] 确认收货逻辑
+    function confirmReceipt(orderId) {
+        if(confirm("确认已收到商品且无误吗？\n确认后订单将完结。")) {
+            $.post('/oms/confirm_receipt', {order_id: orderId}, function(res){
+                if(res.code === 200) {
+                    alert("🎉 交易完成！感谢您的支持！");
+                    location.reload();
+                } else {
+                    alert("操作失败: " + res.msg);
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

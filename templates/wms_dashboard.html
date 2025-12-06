@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <h2 class="border-bottom pb-2 text-primary">📦 WMS 供应链管理中心</h2>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-light">
+            <div class="card-header bg-primary text-white fw-bold">
+                <i class="bi bi-box-seam"></i> 入库操作 (补货)
+            </div>
+            <div class="card-body">
+                <form id="stock-form">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">1. 选择目标仓库</label>
+                        <select class="form-select" name="ware_id">
+                            {% for w in warehouses %}
+                            <option value="{{ w.id }}">{{ w.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">2. 选择入库商品 (SKU)</label>
+                        <select class="form-select" name="sku_id">
+                            {% for sku in skus %}
+                            <option value="{{ sku.id }}">
+                                {{ sku.product_name }} [{{ sku.sp_data }}]
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">3. 补货数量</label>
+                        <input type="number" name="quantity" class="form-control" value="50" min="1">
+                    </div>
+
+                    <button type="button" onclick="addStock()" class="btn btn-primary w-100 py-2">
+                        确认入库
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="alert alert-warning mt-3 small">
+            <strong>系统提示：</strong><br>
+            此处模拟供应链入库流程。<br>
+            提交后，WMS表(物理库存)和PMS表(销售库存)的数据将<b>同步增加</b>，请谨慎操作。
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-bold">
+                <i class="bi bi-list-ul"></i> 当前库存分布总览
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>所在仓库</th>
+                            <th>商品名称</th>
+                            <th>规格</th>
+                            <th class="text-center">物理库存</th>
+                            <th class="text-center">锁定 (待发货)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in stocks %}
+                        <tr>
+                            <td><span class="badge bg-secondary">{{ s.ware_name }}</span></td>
+                            <td class="fw-bold">{{ s.product_name }}</td>
+                            <td><small class="text-muted">{{ s.sp_data }}</small></td>
+                            <td class="text-center text-success fw-bold fs-5">{{ s.stock }}</td>
+                            <td class="text-center text-danger">{{ s.stock_locked }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                暂无库存记录，请在左侧进行第一次补货。
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function addStock() {
+        // 简单的前端校验
+        var qty = $('input[name="quantity"]').val();
+        if(qty <= 0) {
+            alert("数量必须大于0");
+            return;
+        }
+
+        $.post('/wms/add_stock', $('#stock-form').serialize(), function(res){
+            if(res.code === 200) {
+                alert("✅ " + res.msg);
+                location.reload(); // 刷新页面查看最新库存
+            } else {
+                alert("❌ 操作失败: " + res.msg);
+            }
+        }).fail(function() {
+            alert("网络连接失败");
+        });
+    }
+</script>
+{% endblock %}

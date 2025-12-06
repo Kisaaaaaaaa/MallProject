@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0">
+            <img src="{{ product.pic }}" class="img-fluid rounded"
+                 style="width:100%; object-fit: contain; min-height: 400px; background-color: #f8f9fa;"
+                 alt="{{ product.name }}"
+                 onerror="this.src='https://dummyimage.com/600x600/dee2e6/6c757d.jpg&text=No+Image'">
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        <div class="d-flex justify-content-between align-items-start">
+            <h2 class="fw-bold">{{ product.name }}</h2>
+            {% if brand %}
+            <span class="badge bg-light text-dark border p-2">
+                {% if brand.logo %}
+                <img src="{{ brand.logo }}" style="height: 20px;" onerror="this.style.display='none'">
+                {% endif %}
+                {{ brand.name }}
+            </span>
+            {% endif %}
+        </div>
+
+        <p class="text-muted mb-3">
+            <span class="me-3">货号: {{ product.product_sn }}</span>
+            <span class="badge bg-warning text-dark">已售 {{ product.sale }}</span>
+        </p>
+
+        <h3 class="text-danger mb-4 bg-light p-3 rounded">
+            ¥ <span id="price-display" class="fw-bold">--</span>
+        </h3>
+
+        <div class="mb-4">
+            <label class="form-label fw-bold">选择规格:</label>
+            <select class="form-select form-select-lg" id="sku-select">
+                {% for sku in skus %}
+                <option value="{{ sku.id }}"
+                        data-price="{{ sku.price }}"
+                        data-stock="{{ sku.stock }}">
+                    {{ sku.sp_data }} (剩余库存: {{ sku.stock }})
+                </option>
+                {% else %}
+                <option disabled>暂无规格数据</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-bold">购买数量:</label>
+            <div class="input-group" style="width: 150px;">
+                <button class="btn btn-outline-secondary" type="button" onclick="changeQty(-1)">-</button>
+                <input type="number" id="quantity" class="form-control text-center" value="1" min="1" readonly>
+                <button class="btn btn-outline-secondary" type="button" onclick="changeQty(1)">+</button>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 d-md-block">
+            <button onclick="addToCart()" class="btn btn-primary btn-lg px-5 shadow">
+                <i class="bi bi-cart-plus"></i> 加入购物车
+            </button>
+            <button class="btn btn-outline-secondary btn-lg" disabled>
+                <i class="bi bi-heart"></i> 收藏
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card bg-light border-0">
+            <div class="card-body p-4">
+                <h5 class="card-title fw-bold mb-3"><i class="bi bi-pencil-square"></i> 发表您的看法</h5>
+                <form id="comment-form">
+                    <input type="hidden" id="comment-product-id" value="{{ product.id }}">
+                    <div class="mb-3">
+                        <textarea class="form-control" id="comment-content" rows="3" placeholder="商品质量如何？物流快不快？写下您的真实体验..."></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" onclick="submitComment()" class="btn btn-primary btn-sm px-4">提交评价</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4 mb-5">
+    <div class="col-12">
+        <h4 class="border-bottom pb-2 mb-3">用户评价 ({{ comments|length }})</h4>
+        <div class="list-group list-group-flush">
+            {% for c in comments %}
+            <div class="list-group-item px-0 py-3">
+                <div class="d-flex w-100 justify-content-between">
+                    <div>
+                        <span class="fw-bold text-primary me-2">{{ c.member_nick_name }}</span>
+                        <span class="text-warning">★★★★★</span>
+                    </div>
+                    <small class="text-muted">{{ c.create_time }}</small>
+                </div>
+                <p class="mb-1 mt-2">{{ c.content }}</p>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted bg-light rounded">
+                <i class="bi bi-chat-square-dots display-4"></i>
+                <p class="mt-3 mb-0">暂无评价，快来抢沙发吧！</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // 数量加减小工具
+    function changeQty(delta) {
+        var input = $('#quantity');
+        var val = parseInt(input.val()) + delta;
+        if (val >= 1) input.val(val);
+    }
+
+    // --- PMS: 价格联动 ---
+    function updatePrice() {
+        var selectedOption = $('#sku-select option:selected');
+        if (selectedOption.length > 0) {
+            var price = selectedOption.data('price');
+            $('#price-display').text(price);
+        } else {
+            $('#price-display').text('暂无报价');
+        }
+    }
+    $('#sku-select').change(updatePrice);
+    $(document).ready(function() { updatePrice(); });
+
+    // --- OMS: 加入购物车 ---
+    function addToCart() {
+        var skuId = $('#sku-select').val();
+        var qty = $('#quantity').val();
+
+        if (!skuId) { alert("该商品暂无库存或规格"); return; }
+
+        // 按钮加载态
+        var btn = event.currentTarget;
+        var orgText = btn.innerHTML;
+        btn.innerHTML = '处理中...';
+        btn.disabled = true;
+
+        $.post('/oms/add_to_cart', {sku_id: skuId, quantity: qty}, function(res){
+            if(res.code === 200) {
+                alert("🎉 已成功加入购物车！");
+            } else if (res.code === 401) {
+                if(confirm("您尚未登录，是否去登录？")) window.location.href = "/ums/login";
+            } else {
+                alert("加入失败: " + res.msg);
+            }
+            btn.innerHTML = orgText;
+            btn.disabled = false;
+        }).fail(function(){
+            alert("网络请求失败");
+            btn.innerHTML = orgText;
+            btn.disabled = false;
+        });
+    }
+
+    // --- CMS: 提交评价 ---
+    function submitComment() {
+        var pid = $('#comment-product-id').val();
+        var content = $('#comment-content').val();
+
+        if(!content.trim()) { alert("评价内容不能为空哦！"); return; }
+
+        $.post('/cms/add_comment', {product_id: pid, content: content}, function(res){
+            if(res.code === 200) {
+                alert("✅ 评价发表成功！");
+                location.reload();
+            } else if (res.code === 401) {
+                if(confirm("发表评价需要登录，去登录吗？")) window.location.href = "/ums/login";
+            } else {
+                alert("评价失败: " + res.msg);
+            }
+        });
+    }
+</script>
+{% endblock %}

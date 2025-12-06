@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <h2 class="border-bottom pb-2 text-danger">🎁 领券中心</h2>
+    </div>
+
+    {% for c in coupons %}
+    <div class="col-md-4 mb-4">
+        <div class="card border-danger shadow-sm h-100">
+            <div class="card-body text-center d-flex flex-column justify-content-between">
+                <div>
+                    <h3 class="text-danger fw-bold display-5">¥ {{ c.amount }}</h3>
+                    <p class="text-muted mb-2">满 {{ c.min_point }} 元可用</p>
+                    <h5 class="card-title text-truncate" title="{{ c.name }}">{{ c.name }}</h5>
+
+                    {% set total = c.publish_count|default(0)|int %}
+                    {% set received = c.receive_count|default(0)|int %}
+                    {% if total > 0 %}
+                        {% set percent = (received / total * 100) | round | int %}
+                        {% if percent > 100 %}{% set percent = 100 %}{% endif %}
+                    {% else %}
+                        {% set percent = 0 %}
+                    {% endif %}
+
+                    <div class="progress mb-2 mt-3" style="height: 10px;">
+                        <div class="progress-bar bg-danger" role="progressbar"
+                             style="width: {{ percent }}%"
+                             aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+
+                    <p class="small text-secondary mb-3">
+                        已抢 {{ received }} / {{ total }} 张<br>
+                        有效期至: {{ c.end_time }}
+                    </p>
+                </div>
+
+                {% if received >= total %}
+                    <button class="btn btn-secondary w-100" disabled>已抢光</button>
+                {% else %}
+                    <button onclick="receiveCoupon('{{ c.id }}', this)" class="btn btn-outline-danger w-100">
+                        立即领取
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5 text-muted bg-light rounded">
+        <h4>😔 暂无正在进行的优惠活动</h4>
+        <p>过段时间再来看看吧！</p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    // [优化] 接收 btnElement 参数，兼容性更好
+    function receiveCoupon(id, btnElement) {
+        var originalText = btnElement.innerHTML;
+
+        // 禁用按钮，防止重复提交
+        btnElement.disabled = true;
+        btnElement.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 领取中...';
+
+        $.post('/sms/receive_coupon', {coupon_id: id}, function(res){
+            if(res.code === 200) {
+                alert("🎉 " + res.msg);
+                location.reload(); // 刷新页面更新进度
+            } else if (res.code === 401) {
+                if(confirm("领取优惠券需要登录，现在去登录吗？")) {
+                    window.location.href = "/ums/login";
+                } else {
+                    // 恢复按钮
+                    btnElement.disabled = false;
+                    btnElement.innerHTML = originalText;
+                }
+            } else {
+                alert("❌ " + res.msg);
+                btnElement.disabled = false;
+                btnElement.innerHTML = originalText;
+            }
+        }).fail(function() {
+            alert("网络连接失败，请检查网络");
+            btnElement.disabled = false;
+            btnElement.innerHTML = originalText;
+        });
+    }
+</script>
+{% endblock %}

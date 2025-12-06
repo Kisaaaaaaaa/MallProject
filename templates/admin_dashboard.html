@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-2 mb-3">
+        <div class="list-group">
+            <a href="{{ url_for('sys_admin.dashboard') }}" class="list-group-item list-group-item-action active bg-dark border-0">
+                <i class="bi bi-speedometer2"></i> 控制台
+            </a>
+            <a href="{{ url_for('sys_admin.product_list') }}" class="list-group-item list-group-item-action">
+                <i class="bi bi-list-ul"></i> 商品管理列表
+            </a>
+            <a href="{{ url_for('sys_admin.product_add') }}" class="list-group-item list-group-item-action">
+                <i class="bi bi-plus-circle"></i> 发布新商品
+            </a>
+            <a href="/wms/" class="list-group-item list-group-item-action">
+                <i class="bi bi-box-seam"></i> 库存补货
+            </a>
+            <a href="{{ url_for('sys_admin.logout') }}" class="list-group-item list-group-item-action text-danger">
+                <i class="bi bi-box-arrow-right"></i> 退出登录
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-10">
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-white bg-success mb-3 h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-currency-yen"></i> 总销售额 (GMV)</h5>
+                        <p class="card-text display-6">¥ {{ sales | default(0) }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-primary mb-3 h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-receipt"></i> 今日订单</h5>
+                        <p class="card-text display-6">{{ today_orders | default(0) }} 单</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-warning mb-3 h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-exclamation-triangle"></i> 库存告急商品</h5>
+                        <p class="card-text display-6">{{ low_stock | default(0) }} 件</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-list-check"></i> 最新待处理订单</h5>
+                <small class="text-muted">仅显示最近 5 条</small>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>订单号 / 时间</th>
+                            <th>收货人</th>
+                            <th>金额</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for o in orders %}
+                        <tr>
+                            <td>
+                                <span class="fw-bold">{{ o.order_sn }}</span><br>
+                                <small class="text-muted">{{ o.create_time }}</small>
+                            </td>
+                            <td>
+                                {{ o.receiver_name }}<br>
+                                <small class="text-muted">{{ o.receiver_phone }}</small>
+                            </td>
+                            <td class="fw-bold text-danger">¥ {{ o.total_amount }}</td>
+                            <td>
+                                {% if o.status == 0 %}
+                                    <span class="badge bg-secondary">待付款</span>
+                                {% elif o.status == 1 %}
+                                    <span class="badge bg-warning text-dark">待发货</span>
+                                {% elif o.status == 2 %}
+                                    <span class="badge bg-primary">已发货</span>
+                                {% elif o.status == 3 %}
+                                    <span class="badge bg-success">已完成</span>
+                                {% elif o.status == 4 %}
+                                    <span class="badge bg-secondary">已关闭</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if o.status == 0 or o.status == 1 %}
+                                <button onclick="shipOrder('{{ o.id }}', this)" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-truck"></i> 发货
+                                </button>
+                                {% else %}
+                                <button class="btn btn-sm btn-light" disabled>已处理</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                暂无订单数据
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function shipOrder(id, btn) {
+        if(confirm("确认发货吗？\n这将把订单状态更为【已发货】。")) {
+            // 按钮防抖
+            var orgText = btn.innerHTML;
+            btn.innerHTML = '处理中...';
+            btn.disabled = true;
+
+            $.post('/admin/order/ship', {order_id: id}, function(res){
+                if(res.code === 200) {
+                    alert("✅ 发货成功！");
+                    location.reload();
+                } else {
+                    alert("❌ 操作失败");
+                    btn.innerHTML = orgText;
+                    btn.disabled = false;
+                }
+            }).fail(function() {
+                alert("网络请求失败");
+                btn.innerHTML = orgText;
+                btn.disabled = false;
+            });
+        }
+    }
+</script>
+{% endblock %}

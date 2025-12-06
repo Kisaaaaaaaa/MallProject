@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-2 mb-3">
+        <div class="list-group">
+            <a href="/admin/" class="list-group-item list-group-item-action">
+                <i class="bi bi-speedometer2"></i> 控制台
+            </a>
+            <a href="{{ url_for('sys_admin.product_list') }}" class="list-group-item list-group-item-action active bg-dark border-0">
+                <i class="bi bi-list-ul"></i> 商品管理
+            </a>
+            <a href="{{ url_for('sys_admin.product_add') }}" class="list-group-item list-group-item-action">
+                <i class="bi bi-plus-circle"></i> 发布商品
+            </a>
+            <a href="/wms/" class="list-group-item list-group-item-action">
+                <i class="bi bi-box-seam"></i> 库存补货
+            </a>
+            <a href="{{ url_for('sys_admin.logout') }}" class="list-group-item list-group-item-action text-danger">
+                <i class="bi bi-box-arrow-right"></i> 退出登录
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-10">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-box2"></i> 商品列表</h5>
+                <a href="{{ url_for('sys_admin.product_add') }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg"></i> 发布新商品
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="8%">ID</th>
+                            <th width="10%">图片</th>
+                            <th>商品名称 / 货号</th>
+                            <th width="10%">价格</th>
+                            <th width="10%">总库存</th>
+                            <th width="10%">状态</th>
+                            <th width="15%">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in products %}
+                        <tr>
+                            <td>{{ p.id }}</td>
+                            <td>
+                                <img src="{{ p.pic }}" style="width: 50px; height: 50px; object-fit: cover;" class="border rounded" onerror="this.src='https://dummyimage.com/50x50/dee2e6/6c757d.jpg&text=Img'">
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ p.name }}</div>
+                                <small class="text-muted">NO. {{ p.product_sn }}</small>
+                            </td>
+                            <td class="text-danger fw-bold">¥ {{ p.price }}</td>
+                            <td>
+                                {% if p.total_stock < 10 %}
+                                    <span class="text-danger fw-bold">{{ p.total_stock }}</span>
+                                {% else %}
+                                    {{ p.total_stock }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if p.publish_status == 1 %}
+                                    <span class="badge bg-success">上架中</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">已下架</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button onclick="deleteProduct({{ p.id }})" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i> 删除
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">暂无商品数据</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function deleteProduct(id) {
+        if(confirm("确定要删除该商品吗？\n删除后前台将不再显示，但历史订单不受影响。")) {
+            $.post('/admin/product/delete', {id: id}, function(res){
+                if(res.code === 200) {
+                    alert("删除成功");
+                    location.reload();
+                } else {
+                    alert("操作失败: " + res.msg);
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

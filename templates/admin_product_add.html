@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center mb-5">
+    <div class="col-md-10">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="bi bi-bag-plus"></i> 发布多规格商品</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="/admin/product/add" id="product-form">
+
+                    <h6 class="border-bottom pb-2 mb-3 text-primary">1. 商品基本信息</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">商品名称</label>
+                            <input type="text" name="name" class="form-control" placeholder="如：iPhone 15" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">商品货号 (SPU编码)</label>
+                            <input type="text" name="product_sn" class="form-control" placeholder="如：NO.1001" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">所属分类 (可输入新分类)</label>
+                            <input type="text" name="category_name" class="form-control" list="cat_list" placeholder="输入或选择分类" required>
+                            <datalist id="cat_list">
+                                {% for c in cats %}
+                                <option value="{{ c.name }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">所属品牌 (可输入新品牌)</label>
+                            <input type="text" name="brand_name" class="form-control" list="brand_list" placeholder="输入或选择品牌" required>
+                            <datalist id="brand_list">
+                                {% for b in brands %}
+                                <option value="{{ b.name }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">商品主图 URL</label>
+                        <input type="text" name="pic" class="form-control" value="https://dummyimage.com/600x600/000/fff.jpg&text=Product">
+                        <div class="form-text">为了演示方便，这里填入图片链接即可</div>
+                    </div>
+
+                    <h6 class="border-bottom pb-2 mb-3 text-primary d-flex justify-content-between align-items-center">
+                        2. 规格与库存设置
+                        <button type="button" class="btn btn-sm btn-success" onclick="addSkuRow()">
+                            <i class="bi bi-plus-lg"></i> 添加规格
+                        </button>
+                    </h6>
+
+                    <div class="table-responsive bg-light p-3 rounded mb-4">
+                        <table class="table table-bordered bg-white" id="sku-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 40%">规格描述 (如: 颜色/尺码)</th>
+                                    <th style="width: 20%">销售价格 (¥)</th>
+                                    <th style="width: 20%">库存数量</th>
+                                    <th style="width: 10%">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <input type="text" name="sku_specs[]" class="form-control" placeholder="如: 黑色 256G" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" name="sku_prices[]" class="form-control" placeholder="0.00" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="sku_stocks[]" class="form-control" value="100" required>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeSkuRow(this)" disabled>
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="form-text text-muted">提示：至少需要保留一种规格。前台将自动展示最低价。</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">确认发布商品</button>
+                        <a href="/admin/" class="btn btn-outline-secondary">返回控制台</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function addSkuRow() {
+        var table = document.getElementById("sku-table").getElementsByTagName('tbody')[0];
+        var newRow = table.insertRow();
+
+        var html = `
+            <td><input type="text" name="sku_specs[]" class="form-control" placeholder="如: 白色 512G" required></td>
+            <td><input type="number" step="0.01" name="sku_prices[]" class="form-control" placeholder="0.00" required></td>
+            <td><input type="number" name="sku_stocks[]" class="form-control" value="100" required></td>
+            <td class="text-center">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeSkuRow(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+        newRow.innerHTML = html;
+        checkRows();
+    }
+
+    function removeSkuRow(btn) {
+        var row = btn.parentNode.parentNode;
+        row.parentNode.removeChild(row);
+        checkRows();
+    }
+
+    // 检查行数，如果只有一行，禁止删除（保证至少有一个SKU）
+    function checkRows() {
+        var table = document.getElementById("sku-table").getElementsByTagName('tbody')[0];
+        var rows = table.getElementsByTagName('tr');
+        var btns = table.getElementsByClassName('btn-outline-danger');
+
+        if(rows.length <= 1) {
+            btns[0].disabled = true;
+        } else {
+            for(var i=0; i<btns.length; i++) {
+                btns[i].disabled = false;
+            }
+        }
+    }
+</script>
+{% endblock %}

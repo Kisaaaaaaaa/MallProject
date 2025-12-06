@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>商品列表 (PMS)</h2>
+<div class="row">
+    {% for p in products %}
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div style="height:200px; background:#eee; text-align:center; line-height:200px;">商品图</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ p.name }}</h5>
+                <p class="card-text text-danger">¥ {{ p.price }}</p>
+                <p class="card-text">库存: {{ p.stock }}</p>
+                <button onclick="buy({{ p.sku_id }})" class="btn btn-success">立即购买</button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+function buy(skuId) {
+    if(!confirm("确定要购买吗？")) return;
+
+    $.post("/oms/create_order", {sku_id: skuId, quantity: 1}, function(res){
+        if(res.code === 200) {
+            alert("下单成功！订单号: " + res.order_sn);
+            location.reload();
+        } else if (res.code === 401) {
+            alert("请先登录");
+            location.href = "/ums/login";
+        } else {
+            alert("下单失败: " + res.msg);
+        }
+    });
+}
+</script>
+{% endblock %}
